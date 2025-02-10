@@ -4,6 +4,8 @@
 
 A Model Context Protocol server that provides MySQL database operations. This server enables AI models to interact with MySQL databases through a standardized interface.
 
+<a href="https://glama.ai/mcp/servers/hcqqd3qi8q"><img width="380" height="200" src="https://glama.ai/mcp/servers/hcqqd3qi8q/badge" alt="MCP-MySQL Server MCP server" /></a>
+
 ## Installation & Setup for Cursor IDE
 
 ### Installing via Smithery
