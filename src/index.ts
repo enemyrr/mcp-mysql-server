@@ -271,13 +271,29 @@ class MySQLServer {
   }
 
   private async loadConfig(args: ConnectionArgs): Promise<ConnectionConfig> {
-    if (args.url) return this.parseConnectionUrl(args.url);
-    if (args.workspace) {
-      const config = await this.loadWorkspaceConfig(args.workspace);
-      if (config) return config;
-    }
-    if (this.hasDirectConfig(args)) return this.createDirectConfig(args);
+    console.error('Loading config with args:', args);
 
+    if (args.url) {
+      console.error('Using URL configuration');
+      return this.parseConnectionUrl(args.url);
+    }
+
+    if (args.workspace) {
+      console.error('Attempting workspace configuration from:', args.workspace);
+      const config = await this.loadWorkspaceConfig(args.workspace);
+      if (config) {
+        console.error('Successfully loaded workspace config');
+        return config;
+      }
+      console.error('Failed to load workspace config');
+    }
+
+    if (this.hasDirectConfig(args)) {
+      console.error('Using direct configuration parameters');
+      return this.createDirectConfig(args);
+    }
+
+    console.error('No valid configuration method found');
     throw new McpError(
       ErrorCode.InvalidParams,
       'No valid configuration provided. Please provide either a URL, workspace path, or connection parameters.'
@@ -286,29 +302,51 @@ class MySQLServer {
 
   private async loadWorkspaceConfig(workspace: string): Promise<ConnectionConfig | null> {
     try {
-      // Try loading .env from the workspace
-      const envPath = path.join(workspace, '.env');
-      const workspaceEnv = require('dotenv').config({ path: envPath });
+      const fs = await import('fs');
+      const envPaths = [path.join(workspace, '.env.local'), path.join(workspace, '.env')];
+      let loadedConfig: ConnectionConfig | null = null;
 
-      if (workspaceEnv.error) {
-        return null;
+      for (const envPath of envPaths) {
+        console.error(`Attempting to load environment file from: ${envPath}`);
+        // Check if file exists before trying to load it
+        if (!fs.existsSync(envPath)) {
+          console.error(`Environment file not found at: ${envPath}`);
+          continue; // Try the next path
+        }
+
+        const workspaceEnv = require('dotenv').config({ path: envPath });
+
+        if (workspaceEnv.error) {
+          console.error(`Error loading environment file ${envPath}:`, workspaceEnv.error);
+          continue; // Try the next path even if loading failed
+        }
+
+        console.error(`Successfully loaded environment file: ${envPath}`);
+        const { DATABASE_URL, DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = workspaceEnv.parsed || {};
+
+        if (DATABASE_URL) {
+          console.error(`Found DATABASE_URL in ${envPath}`);
+          loadedConfig = this.parseConnectionUrl(DATABASE_URL);
+          break; // Found DATABASE_URL, stop searching
+        }
+
+        if (DB_HOST && DB_USER && DB_PASSWORD && DB_DATABASE) {
+          console.error(`Found individual database credentials in ${envPath}`);
+          loadedConfig = {
+            host: DB_HOST,
+            user: DB_USER,
+            password: DB_PASSWORD,
+            database: DB_DATABASE
+          };
+          break; // Found credentials, stop searching
+        }
       }
 
-      const { DATABASE_URL, DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = workspaceEnv.parsed;
-
-      if (DATABASE_URL) {
-        return this.parseConnectionUrl(DATABASE_URL);
+      if (loadedConfig) {
+        return loadedConfig;
       }
 
-      if (DB_HOST && DB_USER && DB_PASSWORD && DB_DATABASE) {
-        return {
-          host: DB_HOST,
-          user: DB_USER,
-          password: DB_PASSWORD,
-          database: DB_DATABASE
-        };
-      }
-
+      console.error('No valid database configuration found in checked environment files within workspace:', workspace);
       return null;
     } catch (error) {
       console.error('Error loading workspace config:', error);
@@ -380,14 +418,16 @@ class MySQLServer {
             properties: {
               sql: {
                 type: 'string',
-                description: 'SQL SELECT query',
+                description: 'The SQL SELECT query string to execute.',
               },
               params: {
                 type: 'array',
                 items: {
                   type: ['string', 'number', 'boolean', 'null'],
+                  description: 'A parameter value to bind to the query.'
                 },
-                description: 'Query parameters (optional)',
+                description: 'An optional array of parameters to bind to the SQL query placeholders (e.g., ?).',
+                optional: true,
               },
             },
             required: ['sql'],
@@ -401,14 +441,16 @@ class MySQLServer {
             properties: {
               sql: {
                 type: 'string',
-                description: 'SQL query (INSERT, UPDATE, DELETE)',
+                description: 'The SQL query string (INSERT, UPDATE, DELETE) to execute.',
               },
               params: {
                 type: 'array',
                 items: {
                   type: ['string', 'number', 'boolean', 'null'],
+                  description: 'A parameter value to bind to the query.'
                 },
-                description: 'Query parameters (optional)',
+                description: 'An optional array of parameters to bind to the SQL query placeholders (e.g., ?).',
+                optional: true,
               },
             },
             required: ['sql'],
