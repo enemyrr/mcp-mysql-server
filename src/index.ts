@@ -303,31 +303,39 @@ class MySQLServer {
   private async loadWorkspaceConfig(workspace: string): Promise<ConnectionConfig | null> {
     try {
       const fs = await import('fs');
-      const envPaths = [path.join(workspace, '.env.local'), path.join(workspace, '.env')];
+      // Resolve workspace path relative to current working directory
+      const resolvedWorkspace = path.resolve(process.cwd(), workspace);
+      console.error(`Resolved workspace path: ${resolvedWorkspace}`);
+
+      const envPaths = [
+        path.join(resolvedWorkspace, '.env.local'),
+        path.join(resolvedWorkspace, '.env')
+      ];
+
       let loadedConfig: ConnectionConfig | null = null;
 
       for (const envPath of envPaths) {
-        console.error(`Attempting to load environment file from: ${envPath}`);
-        // Check if file exists before trying to load it
+        console.error(`Checking for env file at: ${envPath}`);
+        
         if (!fs.existsSync(envPath)) {
           console.error(`Environment file not found at: ${envPath}`);
-          continue; // Try the next path
+          continue;
         }
 
+        console.error(`Found environment file at: ${envPath}`);
         const workspaceEnv = require('dotenv').config({ path: envPath });
 
         if (workspaceEnv.error) {
           console.error(`Error loading environment file ${envPath}:`, workspaceEnv.error);
-          continue; // Try the next path even if loading failed
+          continue;
         }
 
-        console.error(`Successfully loaded environment file: ${envPath}`);
         const { DATABASE_URL, DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = workspaceEnv.parsed || {};
 
         if (DATABASE_URL) {
           console.error(`Found DATABASE_URL in ${envPath}`);
           loadedConfig = this.parseConnectionUrl(DATABASE_URL);
-          break; // Found DATABASE_URL, stop searching
+          break;
         }
 
         if (DB_HOST && DB_USER && DB_PASSWORD && DB_DATABASE) {
@@ -338,16 +346,16 @@ class MySQLServer {
             password: DB_PASSWORD,
             database: DB_DATABASE
           };
-          break; // Found credentials, stop searching
+          break;
         }
       }
 
-      if (loadedConfig) {
-        return loadedConfig;
+      if (!loadedConfig) {
+        console.error('No valid database configuration found in workspace:', resolvedWorkspace);
+        console.error('Checked paths:', envPaths);
       }
 
-      console.error('No valid database configuration found in checked environment files within workspace:', workspace);
-      return null;
+      return loadedConfig;
     } catch (error) {
       console.error('Error loading workspace config:', error);
       return null;
@@ -423,10 +431,10 @@ class MySQLServer {
               params: {
                 type: 'array',
                 items: {
-                  type: ['string', 'number', 'boolean', 'null'],
-                  description: 'A parameter value to bind to the query.'
+                  type: 'string',
+                  description: 'A parameter value (as string) to bind to the query.'
                 },
-                description: 'An optional array of parameters to bind to the SQL query placeholders (e.g., ?).',
+                description: 'An optional array of parameters (as strings) to bind to the SQL query placeholders (e.g., ?).',
                 optional: true,
               },
             },
@@ -446,10 +454,10 @@ class MySQLServer {
               params: {
                 type: 'array',
                 items: {
-                  type: ['string', 'number', 'boolean', 'null'],
-                  description: 'A parameter value to bind to the query.'
+                  type: 'string',
+                  description: 'A parameter value (as string) to bind to the query.'
                 },
-                description: 'An optional array of parameters to bind to the SQL query placeholders (e.g., ?).',
+                description: 'An optional array of parameters (as strings) to bind to the SQL query placeholders (e.g., ?).',
                 optional: true,
               },
             },
@@ -499,7 +507,8 @@ class MySQLServer {
                     length: { type: 'number', optional: true },
                     nullable: { type: 'boolean', optional: true },
                     default: {
-                      type: ['string', 'number', 'null'],
+                      type: 'string',
+                      description: 'Default value for the column (as string).',
                       optional: true
                     },
                     autoIncrement: { type: 'boolean', optional: true },
@@ -543,7 +552,8 @@ class MySQLServer {
                   length: { type: 'number', optional: true },
                   nullable: { type: 'boolean', optional: true },
                   default: {
-                    type: ['string', 'number', 'null'],
+                    type: 'string',
+                    description: 'Default value for the column (as string).',
                     optional: true
                   }
                 },
