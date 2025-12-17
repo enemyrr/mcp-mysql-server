@@ -9,7 +9,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import * as mysql from 'mysql2/promise';
 import { config } from 'dotenv';
-import { parse as parseUrl } from 'url';
 import path from 'path';
 
 // Load environment variables
@@ -100,7 +99,6 @@ class MySQLServer {
   private server: Server;
   private pool: mysql.Pool | null = null;
   private config: ConnectionConfig | null = null;
-  private currentWorkspace: string | null = null;
 
   constructor() {
     this.server = new Server(
@@ -367,15 +365,23 @@ class MySQLServer {
   }
 
   private parseConnectionUrl(url: string): ConnectionConfig {
-    const parsed = parseUrl(url);
-    if (!parsed.host || !parsed.auth) {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
       throw new McpError(
         ErrorCode.InvalidParams,
         'Invalid connection URL'
       );
     }
 
-    const [user, password] = parsed.auth.split(':');
+    if (!parsed.hostname || !parsed.username) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        'Invalid connection URL: host and user are required'
+      );
+    }
+
     const database = parsed.pathname?.slice(1);
 
     if (!database) {
@@ -386,10 +392,10 @@ class MySQLServer {
     }
 
     return {
-      host: parsed.hostname!,
+      host: parsed.hostname,
       port: parsed.port ? parseInt(parsed.port, 10) : undefined,
-      user,
-      password: password || '',
+      user: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password || ''),
       database,
       ssl: parsed.protocol === 'mysqls:' ? { rejectUnauthorized: true } : undefined
     };
