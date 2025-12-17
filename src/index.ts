@@ -18,6 +18,7 @@ config();
 // Type definitions
 interface DatabaseConfig {
   host: string;
+  port?: number;
   user: string;
   password: string;
   database: string;
@@ -71,6 +72,7 @@ interface ConnectionArgs {
   url?: string;
   workspace?: string;
   host?: string;
+  port?: number;
   user?: string;
   password?: string;
   database?: string;
@@ -264,6 +266,7 @@ class MySQLServer {
 
     return {
       host: args.host!,
+      port: args.port,
       user: args.user!,
       password: args.password!,
       database: args.database!
@@ -330,7 +333,7 @@ class MySQLServer {
           continue;
         }
 
-        const { DATABASE_URL, DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE } = workspaceEnv.parsed || {};
+        const { DATABASE_URL, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE } = workspaceEnv.parsed || {};
 
         if (DATABASE_URL) {
           console.error(`Found DATABASE_URL in ${envPath}`);
@@ -342,6 +345,7 @@ class MySQLServer {
           console.error(`Found individual database credentials in ${envPath}`);
           loadedConfig = {
             host: DB_HOST,
+            port: DB_PORT ? parseInt(DB_PORT, 10) : undefined,
             user: DB_USER,
             password: DB_PASSWORD,
             database: DB_DATABASE
@@ -383,6 +387,7 @@ class MySQLServer {
 
     return {
       host: parsed.hostname!,
+      port: parsed.port ? parseInt(parsed.port, 10) : undefined,
       user,
       password: password || '',
       database,
@@ -411,6 +416,7 @@ class MySQLServer {
               },
               // Keep existing connection params as fallback
               host: { type: 'string', optional: true },
+              port: { type: 'number', description: 'Database port (default: 3306)', optional: true },
               user: { type: 'string', optional: true },
               password: { type: 'string', optional: true },
               database: { type: 'string', optional: true }
@@ -600,7 +606,7 @@ class MySQLServer {
         content: [
           {
             type: 'text',
-            text: `Successfully connected to database ${this.config.database} at ${this.config.host}`
+            text: `Successfully connected to database ${this.config.database} at ${this.config.host}${this.config.port ? ':' + this.config.port : ''}`
           }
         ]
       };
