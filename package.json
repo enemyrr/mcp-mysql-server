@@ -26,7 +26,7 @@
   "author": "enemyrr",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "0.6.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "^16.4.7",
     "mysql2": "^3.11.5"
   },
