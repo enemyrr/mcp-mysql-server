@@ -1,6 +1,6 @@
 {
   "name": "mcp-mysql-server",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "A Model Context Protocol server for MySQL database operations",
   "type": "module",
   "bin": {
@@ -28,7 +28,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "^16.4.7",
-    "mysql2": "^3.11.5"
+    "mysql2": "^3.11.5",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
