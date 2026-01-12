@@ -179,15 +179,130 @@ use_mcp_tool({
 });
 ```
 
+### 8. alter_column
+Modify an existing column (type, nullable, default, or rename).
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "alter_column",
+  arguments: {
+    table: "users",
+    column: "phone",
+    type: "varchar",
+    length: 50,
+    nullable: false,
+    newName: "phone_number" // optional: rename column
+  }
+});
+```
+
+### 9. drop_column
+Remove a column from a table.
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "drop_column",
+  arguments: {
+    table: "users",
+    column: "phone_number"
+  }
+});
+```
+
+### 10. drop_table
+Delete a table (requires confirmation).
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "drop_table",
+  arguments: {
+    table: "old_table",
+    confirm: true
+  }
+});
+```
+
+### 11. truncate_table
+Remove all rows from a table (requires confirmation).
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "truncate_table",
+  arguments: {
+    table: "logs",
+    confirm: true
+  }
+});
+```
+
+### 12. list_databases
+List all accessible databases on the server.
+
+### 13. get_indexes
+List all indexes on a table.
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "get_indexes",
+  arguments: {
+    table: "users"
+  }
+});
+```
+
+### 14. get_foreign_keys
+List all foreign key relationships for a table.
+
+```typescript
+use_mcp_tool({
+  server_name: "mysql",
+  tool_name: "get_foreign_keys",
+  arguments: {
+    table: "orders"
+  }
+});
+```
+
+## MCP Resources
+
+Browse database schema as resources:
+
+| URI | Description |
+|-----|-------------|
+| `mysql://schema` | Database overview (table count, size) |
+| `mysql://tables` | List all tables with metadata |
+| `mysql://tables/{name}` | Table details (columns, indexes, FKs) |
+| `mysql://tables/{name}/columns` | Column definitions |
+| `mysql://tables/{name}/indexes` | Index definitions |
+| `mysql://tables/{name}/sample` | Sample 5 rows from table |
+
+## MCP Prompts
+
+Pre-built prompts for common operations:
+
+| Prompt | Description |
+|--------|-------------|
+| `generate-select` | Build SELECT query for a table |
+| `generate-insert` | Generate INSERT template |
+| `generate-update` | Generate UPDATE template |
+| `explain-schema` | Natural language schema explanation |
+| `suggest-indexes` | Index recommendations for a table |
+
 ## Features
 
+- **14 database tools** for queries, schema management, and more
+- **MCP Resources** for browsing database schema
+- **MCP Prompts** for generating SQL queries
 - Multiple connection methods (URL, workspace, direct)
 - Secure connection handling with automatic cleanup
 - Prepared statement support for query parameters
-- Schema management tools
 - Comprehensive error handling and validation
 - TypeScript support
-- Automatic workspace detection
 
 ## Security
 
